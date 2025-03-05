@@ -67,7 +67,7 @@ cat <<'NGINX_CONF' | sudo tee /etc/nginx/conf.d/$DOMAIN_NAME.conf
 server {
     server_name nifi-prod.bluedotspace.io;
     location / {
-        proxy_pass https://10.2.0.5:8443;
+        proxy_pass https://10.0.0.6:9443;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -275,14 +275,14 @@ nifi.web.http.network.interface.default=
 #############################################
 
 nifi.web.https.host=$DOMAIN_NAME
-nifi.web.https.port=8443
+nifi.web.https.port=9443
 nifi.web.https.network.interface.default=
 nifi.web.https.application.protocols=h2 http/1.1
 nifi.web.jetty.working.directory=./work/jetty
 nifi.web.jetty.threads=200
 nifi.web.max.header.size=16 KB
 nifi.web.proxy.context.path=
-nifi.web.proxy.host=$DOMAIN_NAME:443,$DOMAIN_NAME,nifi:8443,10.2.0.5:8443
+nifi.web.proxy.host=$DOMAIN_NAME:443,$DOMAIN_NAME,nifi:9443,10.0.0.6:9443
 nifi.web.max.content.size=
 nifi.web.max.requests.per.second=30000
 nifi.web.max.access.token.requests.per.second=25
@@ -577,5 +577,4 @@ echo "Building and starting the environment..."
 docker compose build
 docker compose up -d
 
-echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:8443"
-
+echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:9443"
