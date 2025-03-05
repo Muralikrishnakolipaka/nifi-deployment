@@ -6,6 +6,7 @@ EMAIL="muralikrishna.k@inndata.in"       # Your email for Let's Encrypt
 KEYSTORE_PASSWORD="MyKeystorePass"       # A strong password for keystore
 TRUSTSTORE_PASSWORD="MyTruststorePass"   # A strong password for truststore
 NIFI_BACKEND_ADDRESS="10.0.0.6:9443"     # NiFi backend address (IP:port or container name:port)
+AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:?Environment variable AZURE_CLIENT_SECRET is required} # Load dynamically from environment
 
 # --- Directory Structure ---
 SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -67,7 +68,7 @@ cat <<'NGINX_CONF' | sudo tee /etc/nginx/conf.d/\$DOMAIN_NAME.conf
 server {
     server_name nifi-prod.bluedotspace.io;
     location / {
-        proxy_pass https://$NIFI_BACKEND_ADDRESS;
+        proxy_pass https://10.2.0.5:8443;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -135,27 +136,10 @@ if [ ! -f "$NIFI_DIR/authorizers.xml" ]; then
 <?xml version="1.0" encoding="UTF-8"?>
 <authorizers>
     <userGroupProvider>
-        <identifier>file-user-group-provider</identifier>
-        <class>org.apache.nifi.authorization.FileUserGroupProvider</class>
-        <property name="Users File">./conf/users.xml</property>
-        <property name="Legacy Authorized Users File"></property>
-    </userGroupProvider>
-    <userGroupProvider>
         <identifier>azure-graph-user-group-provider</identifier>
         <class>org.apache.nifi.authorization.azure.AzureGraphUserGroupProvider</class>
-        <property name="Refresh Delay">5 mins</property>
-        <property name="Authority Endpoint">https://login.microsoftonline.com</property>
-        <property name="Directory ID">b309ea5a-b8e2-49d5-bbb7-232c6d9008d7</property>
-        <property name="Application ID">86bd7eab-1a05-4b89-b953-228771ef86dc</property>
-        <property name="Client Secret">REMOVED_SECRET</property>
-        <property name="Claim for Username">email</property>
+        <property name="Client Secret">${AZURE_CLIENT_SECRET}</property>
     </userGroupProvider>
-    <accessPolicyProvider>
-        <identifier>file-access-policy-provider</identifier>
-        <class>org.apache.nifi.authorization.FileAccessPolicyProvider</class>
-        <property name="User Group Provider">file-user-group-provider</property>
-        <property name="Authorizations File">./conf/authorizations.xml</property>
-    </accessPolicyProvider>
 </authorizers>
 EOF
 else
@@ -175,10 +159,7 @@ services:
     networks:
       - internal
     environment:
-      - NIFI_WEB_HTTPS_PORT=8443
-    volumes:
-      - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
-      - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
     ports:
       - "8443:8443"
 networks:
@@ -188,8 +169,9 @@ EOF
 
 # --- Build and Start ---
 echo "Building and starting the environment..."
-sudo docker compose build
-sudo docker compose up -d
+docker compose build
+docker compose up -d
 
-echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:8443"
+echo "Automation complete!"
+echo "NiFi is available at https://$DOMAIN_NAME:8443"
 
