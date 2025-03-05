@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone the repository
+                git branch: 'main', url: 'https://github.com/Muralikrishnakolipaka/nifi-deployment.git'
+            }
+        }
+
+        stage('Prepare') {
+            steps {
+                // Make the script executable
+                sh 'chmod +x nifi_script.sh'
+            }
+        }
+
+        stage('Run Deployment Script') {
+            steps {
+                // Execute the deployment script
+                sh './nifi_script.sh'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'NiFi deployment completed successfully!'
+        }
+        failure {
+            echo 'NiFi deployment failed.'
+        }
+    }
+}
+
