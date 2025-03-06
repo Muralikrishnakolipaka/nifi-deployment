@@ -33,7 +33,23 @@ pipeline {
         stage('Run Deployment Script') {
             steps {
                 // Execute the deployment script
-                sh './nifi_script.sh'
+                sh """
+                #!/bin/bash
+
+                # --- Load environment variables from .env file ---
+                if [ -f .env ]; then
+                  export \$(grep -v '^#' .env | xargs)
+                else
+                  echo "Error: .env file not found!"
+                  exit 1
+                fi
+
+                # Set the OIDC Client Secret
+                export NIFI_OIDC_CLIENT_SECRET="\${AZURE_CLIENT_SECRET}"
+
+                # Now execute deployment script
+                ./nifi_script.sh
+                """
             }
         }
     }
