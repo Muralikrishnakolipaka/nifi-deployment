@@ -4,6 +4,9 @@ pipeline {
     environment {
         // Inject secrets from Jenkins credentials
         AZURE_CLIENT_SECRET = credentials('azure-client-secret-id')
+        NIFI_PORT = '9443' // Define the desired NiFi port
+        DOMAIN_NAME = 'nifi-prod.bluedotspace.io' // Define the domain name
+        NIFI_BACKEND_ADDRESS = '10.0.0.6'//Backend to NIFI
     }
 
     stages {
@@ -22,7 +25,10 @@ pipeline {
                     echo "Creating .env file..."
                     echo "KEYSTORE_PASSWORD=MyKeystorePass" > .env
                     echo "TRUSTSTORE_PASSWORD=MyTruststorePass" >> .env
-                    echo "AZURE_CLIENT_SECRET=${env.AZURE_CLIENT_SECRET}" >> .env
+                    echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}" >> .env
+                    echo "NIFI_PORT=${NIFI_PORT}" >> .env
+                    echo "DOMAIN_NAME=${DOMAIN_NAME}" >> .env
+                    echo "NIFI_BACKEND_ADDRESS=${NIFI_BACKEND_ADDRESS}" >> .env
                     """
                 }
                 // Ensure the script is executable
@@ -33,23 +39,7 @@ pipeline {
         stage('Run Deployment Script') {
             steps {
                 // Execute the deployment script
-                sh """
-                #!/bin/bash
-
-                # --- Load environment variables from .env file ---
-                if [ -f .env ]; then
-                  export \$(grep -v '^#' .env | xargs)
-                else
-                  echo "Error: .env file not found!"
-                  exit 1
-                fi
-
-                # Set the OIDC Client Secret
-                export NIFI_OIDC_CLIENT_SECRET="\${AZURE_CLIENT_SECRET}"
-
-                # Now execute deployment script
-                ./nifi_script.sh
-                """
+                sh './nifi_script.sh'
             }
         }
     }
