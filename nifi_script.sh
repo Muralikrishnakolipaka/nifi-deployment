@@ -107,6 +107,8 @@ chmod +x install_nginx.sh
 sudo ./install_nginx.sh
 cd "$SCRIPT_DIR"
 
+echo "Creating Dockerfile in $NIFI_DIR..."
+cd "$NIFI_DIR"
 
 cat <<EOF > Dockerfile
 FROM apache/nifi:2.2.0
@@ -121,6 +123,10 @@ RUN mkdir -p /opt/certs/
 RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
 HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -f https://localhost:8443/nifi || exit 1
 EOF
+cd "$SCRIPT_DIR"
+
+# --- Confirmation ---
+echo "All files and configurations have been created successfully."
 
 # --- NiFi Configuration Files ---
 echo "Creating required NiFi configuration files..."
