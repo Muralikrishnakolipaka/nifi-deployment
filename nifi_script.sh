@@ -118,15 +118,23 @@ LABEL org.label-schema.name="Apache NiFi with OIDC"
 LABEL org.label-schema.version="1.0"
 
 # Add these lines for debugging
-RUN echo "Contents of /opt/nifi/nifi-current/conf/ BEFORE COPY:" && ls -l /opt/nifi/nifi-current/conf/
-COPY authorizers.xml /opt/nifi/nifi-current/conf/
-COPY nifi.properties /opt/nifi/nifi-current/conf/
-RUN echo "Contents of /opt/nifi/nifi-current/conf/ AFTER COPY:" && ls -l /opt/nifi/nifi-current/conf/
-RUN cat /opt/nifi/nifi-current/conf/nifi.properties
+ARG DEBUG
+RUN if [ "$DEBUG" = "true" ]; then \
+  echo "Contents of /opt/nifi/nifi-current/conf/ BEFORE COPY:" && ls -l /opt/nifi/nifi-current/conf/ && \
+  echo "Copying authorizers.xml and nifi.properties..." && \
+  COPY authorizers.xml /opt/nifi/nifi-current/conf/ && \
+  COPY nifi.properties /opt/nifi/nifi-current/conf/ && \
+  echo "Contents of /opt/nifi/nifi-current/conf/ AFTER COPY:" && ls -l /opt/nifi/nifi-current/conf/ && \
+  echo "Contents of nifi.properties:" && cat /opt/nifi/nifi-current/conf/nifi.properties; \
+fi
 
 RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
 RUN mkdir -p /opt/certs/
 RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
+
+# Create log file so it gets copied to the nifi_logs volume
+RUN touch /opt/nifi/nifi-current/logs/nifi.properties.debug
+
 HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -k https://localhost:9443/nifi || exit 1
 EOF
 cd "$SCRIPT_DIR"
@@ -204,7 +212,7 @@ nifi.state.management.provider.cluster=zk-provider
 nifi.state.management.provider.cluster.previous=
 # Specifies whether or not this instance of NiFi should run an embedded ZooKeeper server
 nifi.state.management.embedded.zookeeper.start=false
-# Properties file that provides the ZooKeeper properties to use if <nifi.state.management.embedded.zookeeper.start> is set to true
+# Properties file that provides the ZooKeeper properties to use if <nifi.state.management.embedded.zookeeper.properties> is set to true
 nifi.state.management.embedded.zookeeper.properties=./conf/zookeeper.properties
 
 # Database Settings
@@ -222,7 +230,7 @@ nifi.swap.manager.implementation=org.apache.nifi.controller.FileSystemSwapManage
 nifi.queue.swap.threshold=20000
 
 # Content Repository
-nifi.content.repository.implementation=org.apache.nifi.controller.repository.FileSystemRepository
+nifi.content.repository.implementation=org.apache.nifi.controller.FileSystemRepository
 nifi.content.claim.max.appendable.size=50 KB
 nifi.content.repository.directory.default=./content_repository
 nifi.content.repository.archive.max.retention.period=3 hours
@@ -597,7 +605,6 @@ services:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
       - nifi_logs:/opt/nifi/nifi-current/logs # Persist logs
-
     ports:
       - "9443:9443"
 networks:
@@ -613,10 +620,14 @@ EOF
 echo "Stopping existing NiFi container..."
 docker stop nifi || true # Ignore errors if it doesn't exist
 docker rm nifi || true   # Ignore errors if it doesn't exist
+
 echo "Clearing old docker volumes"
 docker volume prune -f
+
 echo "Building and starting the environment..."
 docker compose build --no-cache
+
+echo "Starting the container..."
 docker compose up -d
 
 # Delay to allow NiFi to start (adjust if needed)
@@ -626,9 +637,11 @@ sleep 30
 # --- Extract nifi.properties.debug from the volume ----
 echo "Extracting nifi.properties.debug from the NiFi logs volume..."
 LOG_VOLUME=$(docker volume inspect nifi_logs | jq -r '.[0].Mountpoint')
+
 if [ -n "$LOG_VOLUME" ]; then
   cp "$LOG_VOLUME/nifi.properties.debug" "$BASE_DIR/nifi.properties.debug"
   echo "Copied nifi.properties.debug to: $BASE_DIR/nifi.properties.debug"
+  cat "$BASE_DIR/nifi.properties.debug" # Print the content of the file for debugging
 else
   echo "Error: Could not find NiFi logs volume mountpoint."
 fi
