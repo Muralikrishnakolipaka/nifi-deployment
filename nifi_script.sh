@@ -606,7 +606,8 @@ services:
     volumes:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks:ro
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks:ro
-      - nifi_logs:/opt/nifi/nifi-current/logs # Persist logs
+      - nifi_conf:/opt/nifi/nifi-current/conf
+      - nifi_flow_conf:/opt/nifi/nifi-current/flowfile_repository
     ports:
       - "9443:9443"
 networks:
