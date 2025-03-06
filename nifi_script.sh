@@ -308,12 +308,12 @@ nifi.security.keystore=/opt/nifi/nifi-current/conf/keystore.jks
 nifi.security.keystore.certificate=
 nifi.security.keystore.privateKey=
 nifi.security.keystoreType=JKS
-nifi.security.keystorePasswd=$KEYSTORE_PASSWORD
-nifi.security.keyPasswd=$KEYSTORE_PASSWORD
+nifi.security.keystorePasswd=MyKeystorePass
+nifi.security.keyPasswd=MyKeystorePass
 nifi.security.truststore=/opt/nifi/nifi-current/conf/truststore.jks
 nifi.security.truststore.certificate=
 nifi.security.truststoreType=JKS
-nifi.security.truststorePasswd=$TRUSTSTORE_PASSWORD
+nifi.security.truststorePasswd=MyTruststorePass
 
 nifi.security.user.authorizer=managed-authorizer
 nifi.security.allow.anonymous.authentication=false

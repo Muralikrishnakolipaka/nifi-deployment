@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        // Inject secrets from Jenkins credentials
+        AZURE_CLIENT_SECRET = credentials('azure-client-secret-id')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -9,9 +14,18 @@ pipeline {
             }
         }
 
-        stage('Prepare') {
+        stage('Prepare Environment') {
             steps {
-                // Make the script executable
+                // Create the .env file dynamically
+                script {
+                    sh """
+                    echo "Creating .env file..."
+                    echo "KEYSTORE_PASSWORD=MyKeystorePass" > .env
+                    echo "TRUSTSTORE_PASSWORD=MyTruststorePass" >> .env
+                    echo "AZURE_CLIENT_SECRET=${env.AZURE_CLIENT_SECRET}" >> .env
+                    """
+                }
+                // Ensure the script is executable
                 sh 'chmod +x nifi_script.sh'
             }
         }
@@ -33,4 +47,3 @@ pipeline {
         }
     }
 }
-
