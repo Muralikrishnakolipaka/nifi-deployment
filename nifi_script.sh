@@ -116,8 +116,14 @@ USER root
 LABEL org.label-schema.vendor="Bluedotspace"
 LABEL org.label-schema.name="Apache NiFi with OIDC"
 LABEL org.label-schema.version="1.0"
+
+# Add these lines for debugging
+RUN echo "Contents of /opt/nifi/nifi-current/conf/ BEFORE COPY:" && ls -l /opt/nifi/nifi-current/conf/
 COPY authorizers.xml /opt/nifi/nifi-current/conf/
 COPY nifi.properties /opt/nifi/nifi-current/conf/
+RUN echo "Contents of /opt/nifi/nifi-current/conf/ AFTER COPY:" && ls -l /opt/nifi/nifi-current/conf/
+RUN cat /opt/nifi/nifi-current/conf/nifi.properties
+
 RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
 RUN mkdir -p /opt/certs/
 RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
@@ -577,6 +583,8 @@ services:
   nifi:
     build:
       context: ./nifi
+      args:
+        - DEBUG="true"  # Enable debugging in the Dockerfile
     container_name: nifi
     hostname: $DOMAIN_NAME
     networks:
@@ -588,16 +596,41 @@ services:
     volumes:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
+      - nifi_logs:/opt/nifi/nifi-current/logs # Persist logs
+
     ports:
       - "9443:9443"
 networks:
   internal:
     driver: bridge
+volumes:
+  nifi_logs: # Declare the volume
 EOF
 
 # --- Build and Start ---
+
+# Stop and remove existing container
+echo "Stopping existing NiFi container..."
+docker stop nifi || true # Ignore errors if it doesn't exist
+docker rm nifi || true   # Ignore errors if it doesn't exist
+echo "Clearing old docker volumes"
+docker volume prune -f
 echo "Building and starting the environment..."
-docker compose build
+docker compose build --no-cache
 docker compose up -d
+
+# Delay to allow NiFi to start (adjust if needed)
+echo "Waiting for NiFi to start (30 seconds)..."
+sleep 30
+
+# --- Extract nifi.properties.debug from the volume ----
+echo "Extracting nifi.properties.debug from the NiFi logs volume..."
+LOG_VOLUME=$(docker volume inspect nifi_logs | jq -r '.[0].Mountpoint')
+if [ -n "$LOG_VOLUME" ]; then
+  cp "$LOG_VOLUME/nifi.properties.debug" "$BASE_DIR/nifi.properties.debug"
+  echo "Copied nifi.properties.debug to: $BASE_DIR/nifi.properties.debug"
+else
+  echo "Error: Could not find NiFi logs volume mountpoint."
+fi
 
 echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:9443"
