@@ -121,7 +121,7 @@ COPY nifi.properties /opt/nifi/nifi-current/conf/
 RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
 RUN mkdir -p /opt/certs/
 RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
-HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -f https://localhost:9443/nifi || exit 1
+HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -k https://localhost:8443/nifi/ || exit 1
 EOF
 cd "$SCRIPT_DIR"
 
