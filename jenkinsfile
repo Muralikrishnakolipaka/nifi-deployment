@@ -4,6 +4,8 @@ pipeline {
     environment {
         // Inject secrets from Jenkins credentials
         AZURE_CLIENT_SECRET = credentials('azure-client-secret-id')
+        KEYSTORE_PASSWORD = credentials('keystore-password-id') // Inject keystore password
+        TRUSTSTORE_PASSWORD = credentials('truststore-password-id') // Inject truststore password
         NIFI_PORT = '9443' // Define the desired NiFi port
         DOMAIN_NAME = 'nifi-prod.bluedotspace.io' // Define the domain name
         NIFI_BACKEND_ADDRESS = '10.0.0.6'//Backend to NIFI
@@ -23,9 +25,9 @@ pipeline {
                 script {
                     sh """
                     echo "Creating .env file..."
-                    echo "KEYSTORE_PASSWORD=MyKeystorePass" > .env
-                    echo "TRUSTSTORE_PASSWORD=MyTruststorePass" >> .env
-                    echo "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}" >> .env
+                    echo "KEYSTORE_PASSWORD=${env.KEYSTORE_PASSWORD}" > .env
+                    echo "TRUSTSTORE_PASSWORD=${env.TRUSTSTORE_PASSWORD}" >> .env
+                    echo "AZURE_CLIENT_SECRET=${env.AZURE_CLIENT_SECRET}" >> .env
                     echo "NIFI_PORT=${NIFI_PORT}" >> .env
                     echo "DOMAIN_NAME=${DOMAIN_NAME}" >> .env
                     echo "NIFI_BACKEND_ADDRESS=${NIFI_BACKEND_ADDRESS}" >> .env
