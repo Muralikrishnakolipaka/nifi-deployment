@@ -130,11 +130,11 @@ fi
 
 RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
 RUN mkdir -p /opt/certs/
-RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
 
 # Create log file so it gets copied to the nifi_logs volume
 RUN touch /opt/nifi/nifi-current/logs/nifi.properties.debug
 
+RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
 HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -k https://localhost:9443/nifi || exit 1
 EOF
 cd "$SCRIPT_DIR"
@@ -602,11 +602,14 @@ services:
       - NIFI_SECURITY_USER_AUTHORIZER=managed-authorizer
       - NIFI_WEB_PROXY_HOST=$DOMAIN_NAME:9443
     volumes:
-      - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
-      - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
+      - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks:ro
+      - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks:ro
       - nifi_logs:/opt/nifi/nifi-current/logs # Persist logs
     ports:
       - "9443:9443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # for DNS resolution
+
 networks:
   internal:
     driver: bridge
@@ -643,7 +646,8 @@ if [ -n "$LOG_VOLUME" ]; then
   echo "Copied nifi.properties.debug to: $BASE_DIR/nifi.properties.debug"
   cat "$BASE_DIR/nifi.properties.debug" # Print the content of the file for debugging
 else
-  echo "Error: Could not find NiFi logs volume mountpoint."
+  echo "Error: Could not find NiFi logs volume mountpoint.  Inspect docker volumes to confirm creation."
+  docker volume ls  # List docker volumes for debugging
 fi
 
 echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:9443"
