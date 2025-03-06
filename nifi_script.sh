@@ -598,23 +598,23 @@ services:
     networks:
       - internal
     environment:
+      - NIFI_WEB_HTTPS_PORT=9443
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - NIFI_SECURITY_USER_AUTHORIZER=managed-authorizer
       - NIFI_WEB_PROXY_HOST=$DOMAIN_NAME:9443
+      - INITIAL_ADMIN_IDENTITY='muralikrishna.k@inndata.in'
     volumes:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks:ro
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks:ro
       - nifi_logs:/opt/nifi/nifi-current/logs # Persist logs
     ports:
       - "9443:9443"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"  # for DNS resolution
-
 networks:
   internal:
     driver: bridge
 volumes:
-  nifi_logs: # Declare the volume
+  nifi_conf:
+  nifi_flow_conf:
 EOF
 
 # --- Build and Start ---
@@ -637,17 +637,5 @@ docker compose up -d
 echo "Waiting for NiFi to start (30 seconds)..."
 sleep 30
 
-# --- Extract nifi.properties.debug from the volume ----
-echo "Extracting nifi.properties.debug from the NiFi logs volume..."
-LOG_VOLUME=$(docker volume inspect nifi_logs | jq -r '.[0].Mountpoint')
-
-if [ -n "$LOG_VOLUME" ]; then
-  cp "$LOG_VOLUME/nifi.properties.debug" "$BASE_DIR/nifi.properties.debug"
-  echo "Copied nifi.properties.debug to: $BASE_DIR/nifi.properties.debug"
-  cat "$BASE_DIR/nifi.properties.debug" # Print the content of the file for debugging
-else
-  echo "Error: Could not find NiFi logs volume mountpoint.  Inspect docker volumes to confirm creation."
-  docker volume ls  # List docker volumes for debugging
-fi
 
 echo "Automation complete! NiFi is available at https://$DOMAIN_NAME:9443"
