@@ -121,7 +121,7 @@ COPY nifi.properties /opt/nifi/nifi-current/conf/
 RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
 RUN mkdir -p /opt/certs/
 RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
-HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -f https://localhost:8443/nifi || exit 1
+HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -f https://localhost:9443/nifi || exit 1
 EOF
 cd "$SCRIPT_DIR"
 
@@ -583,6 +583,8 @@ services:
       - internal
     environment:
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - NIFI_SECURITY_USER_AUTHORIZER=managed-authorizer
+      - NIFI_WEB_PROXY_HOST=$DOMAIN_NAME:9443
     volumes:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
