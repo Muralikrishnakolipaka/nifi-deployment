@@ -599,6 +599,8 @@ services:
       - internal
     environment:
       - NIFI_WEB_HTTPS_PORT=9443
+      - NIFI_CLUSTER_PROTOCOL_IS_SECURE=true
+      - NIFI_CLUSTER_IS_NODE=false
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - NIFI_SECURITY_USER_AUTHORIZER=managed-authorizer
       - NIFI_WEB_PROXY_HOST=$DOMAIN_NAME:9443
@@ -610,6 +612,8 @@ services:
       - nifi_flow_conf:/opt/nifi/nifi-current/flowfile_repository
     ports:
       - "9443:9443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 networks:
   internal:
     driver: bridge
