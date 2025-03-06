@@ -107,6 +107,21 @@ chmod +x install_nginx.sh
 sudo ./install_nginx.sh
 cd "$SCRIPT_DIR"
 
+
+cat <<EOF > Dockerfile
+FROM apache/nifi:2.2.0
+USER root
+LABEL org.label-schema.vendor="Bluedotspace"
+LABEL org.label-schema.name="Apache NiFi with OIDC"
+LABEL org.label-schema.version="1.0"
+COPY authorizers.xml /opt/nifi/nifi-current/conf/
+COPY nifi.properties /opt/nifi/nifi-current/conf/
+RUN chown -R nifi:nifi /opt/nifi/nifi-current/conf/
+RUN mkdir -p /opt/certs/
+RUN ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
+HEALTHCHECK --interval=5m --timeout=3s --retries=3 CMD curl -f https://localhost:8443/nifi || exit 1
+EOF
+
 # --- NiFi Configuration Files ---
 echo "Creating required NiFi configuration files..."
 
