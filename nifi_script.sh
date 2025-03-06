@@ -605,6 +605,10 @@ services:
       - NIFI_SECURITY_USER_AUTHORIZER=managed-authorizer
       - NIFI_WEB_PROXY_HOST=$DOMAIN_NAME:9443
       - INITIAL_ADMIN_IDENTITY='muralikrishna.k@inndata.in'
+      - KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+      - KEYSTORE_TYPE=JKS
+      - TRUSTSTORE_TYPE=JKS
+      - TRUSTSTORE_PASSWORD=$TRUSTSTORE_PASSWORD
     volumes:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks:ro
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks:ro
