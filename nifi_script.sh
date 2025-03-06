@@ -587,7 +587,7 @@ services:
       - ./cert/$DOMAIN_NAME/keystore.jks:/opt/certs/keystore.jks
       - ./cert/$DOMAIN_NAME/truststore.jks:/opt/certs/truststore.jks
     ports:
-      - "8443:8443"
+      - "9443:9443"
 networks:
   internal:
     driver: bridge
